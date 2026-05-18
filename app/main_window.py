@@ -87,12 +87,30 @@ QSpinBox:hover {
     border-color: #555555;
 }
 QSpinBox::up-button, QSpinBox::down-button {
-    background-color: #1e1e1e;
+    background-color: #3a3a3a;
     border: none;
+    border-radius: 2px;
     width: 16px;
+    margin: 1px;
 }
 QSpinBox::up-button:hover, QSpinBox::down-button:hover {
-    background-color: #2a2a2a;
+    background-color: #555555;
+}
+QSpinBox::up-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 5px solid #cccccc;
+    margin: 0 auto;
+}
+QSpinBox::down-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #cccccc;
+    margin: 0 auto;
 }
 QScrollBar:vertical {
     background: #0d0d0d;
@@ -174,8 +192,8 @@ class MainWindow(QMainWindow):
         nav_layout.setContentsMargins(6, 12, 6, 12)
         nav_layout.setSpacing(4)
 
-        self.nav_home = QPushButton("● 主页")
-        self.nav_tasks = QPushButton("□ 事项")
+        self.nav_home = QPushButton("⌂ 主页")
+        self.nav_tasks = QPushButton("☰ 事项")
         self.nav_settings = QPushButton("⚙ 设置")
         for btn in [self.nav_home, self.nav_tasks, self.nav_settings]:
             btn.setCheckable(True)
@@ -210,12 +228,15 @@ class MainWindow(QMainWindow):
         self.nav_settings.clicked.connect(lambda: self._switch_page(2))
         self.home_page.start_requested.connect(self._start_sticky)
         self.home_page.stop_requested.connect(self._stop_sticky)
+        self.home_page.tasks_changed.connect(self._on_tasks_changed)
         self.settings_page.settings_changed.connect(self._on_settings_changed)
 
     def _switch_page(self, index: int):
         for i, btn in enumerate([self.nav_home, self.nav_tasks, self.nav_settings]):
             btn.setChecked(i == index)
         self.stack.setCurrentIndex(index)
+        if index == 0:
+            self.home_page.refresh_tasks()
         if index == 1:
             self.tasks_page.refresh()
         if index == 2:
@@ -226,6 +247,10 @@ class MainWindow(QMainWindow):
 
     def _stop_sticky(self):
         self.sticky.close_overlay()
+
+    def _on_tasks_changed(self, target_date: str):
+        if self.sticky.isVisible():
+            self.sticky.load_tasks(target_date)
 
     def _on_sticky_done(self, task_id: int, status: str):
         self.home_page.refresh_tasks()

@@ -140,11 +140,15 @@ class StickyOverlay(QWidget):
 
             is_overdue = _is_overdue(task)
 
-            # 圆圈
+            # 圆圈 — 始终可见，颜色跟随文字自适应
             if self._hovered:
-                painter.setPen(QPen(QColor("#666666"), 1.5))
-                painter.setBrush(Qt.BrushStyle.NoBrush)
-                painter.drawEllipse(toggle_rect)
+                circle_color = QColor("#cccccc")
+            else:
+                tc = self._text_colors[i] if i < len(self._text_colors) else "#e0e0e0"
+                circle_color = QColor(tc)
+            painter.setPen(QPen(circle_color, 1.5))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawEllipse(toggle_rect)
 
             # 时间标签
             time_str = task.get("time_label") or ""

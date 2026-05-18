@@ -49,9 +49,9 @@ class TaskRow(QFrame):
         self.content_edit.setStyleSheet("QLineEdit { border: 1px solid #2a2a2a; background: #121212; }")
 
         # 删除
-        del_btn = QPushButton("×")
+        del_btn = QPushButton("✕")
         del_btn.setFixedSize(28, 28)
-        del_btn.setStyleSheet("QPushButton { border: none; color: #555; font-size: 16px; } QPushButton:hover { color: #e04040; }")
+        del_btn.setStyleSheet("QPushButton { border: none; color: #c04040; font-size: 14px; font-weight: bold; } QPushButton:hover { color: #ff4444; background: #2a1515; border-radius: 4px; }")
         del_btn.clicked.connect(lambda: self.deleted.emit(self))
 
         layout.addWidget(self.time_combo)
@@ -99,6 +99,7 @@ class TaskRow(QFrame):
 class HomePage(QWidget):
     start_requested = Signal(str)
     stop_requested = Signal()
+    tasks_changed = Signal(str)  # 事项变更时发出，携带当前日期
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -192,7 +193,7 @@ class HomePage(QWidget):
         self.refresh_tasks()
 
     def refresh_tasks(self):
-        tasks = get_tasks_by_date(self._selected_date)
+        tasks = [t for t in get_tasks_by_date(self._selected_date) if t["status"] == "pending"]
         for row in self._task_rows:
             row.setParent(None)
         self._task_rows.clear()
@@ -240,6 +241,7 @@ class HomePage(QWidget):
         task_ids = [r.get_task().get("id") for r in self._task_rows if r.get_task().get("id")]
         if task_ids:
             reorder_tasks(self._selected_date, task_ids)
+        self.tasks_changed.emit(self._selected_date)
 
     def _on_mode_changed(self, btn):
         self._time_mode = btn.property("mode")
