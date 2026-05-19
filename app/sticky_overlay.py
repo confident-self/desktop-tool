@@ -3,7 +3,7 @@ from PySide6.QtCore import Qt, QTimer, QPoint, Signal, QRect
 from PySide6.QtGui import QPainter, QColor, QFont, QBrush, QPen, QMouseEvent
 from datetime import datetime
 from app.db import get_pending_tasks, update_task_status
-from app.config import get_display_count, get_overdue_color, get_font_size
+from app.config import get_display_count, get_overdue_color, get_font_size, get_transparency
 from app.color_adapt import sample_global_rect, brightness_to_text_color
 
 
@@ -70,11 +70,16 @@ class StickyOverlay(QWidget):
         self._font_size = get_font_size()
         self._update_size()
         self._refresh_colors()
+        self._apply_transparency()
         if not self._tasks:
             self.hide()
         else:
             self.show()
             self._refresh_timer.start()
+
+    def _apply_transparency(self):
+        val = get_transparency()
+        self.setWindowOpacity(max(0.1, val / 100.0))
 
     def _update_size(self):
         row_h = self._font_size + 14
@@ -140,15 +145,11 @@ class StickyOverlay(QWidget):
 
             is_overdue = _is_overdue(task)
 
-            # 圆圈 — 始终可见，颜色跟随文字自适应
+            # 圆圈 — 仅 hover 时可见
             if self._hovered:
-                circle_color = QColor("#cccccc")
-            else:
-                tc = self._text_colors[i] if i < len(self._text_colors) else "#e0e0e0"
-                circle_color = QColor(tc)
-            painter.setPen(QPen(circle_color, 1.5))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawEllipse(toggle_rect)
+                painter.setPen(QPen(QColor("#cccccc"), 1.5))
+                painter.setBrush(Qt.BrushStyle.NoBrush)
+                painter.drawEllipse(toggle_rect)
 
             # 时间标签
             time_str = task.get("time_label") or ""

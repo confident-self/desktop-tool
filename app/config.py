@@ -36,3 +36,11 @@ def get_autostart() -> bool:
 
 def set_autostart(enabled: bool):
     SETTINGS.setValue("system/autostart", enabled)
+
+
+def get_transparency() -> int:
+    return int(SETTINGS.value("display/transparency", 100))
+
+
+def set_transparency(value: int):
+    SETTINGS.setValue("display/transparency", value)

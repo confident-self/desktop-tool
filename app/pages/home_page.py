@@ -51,7 +51,7 @@ class TaskRow(QFrame):
         # 删除
         del_btn = QPushButton("✕")
         del_btn.setFixedSize(28, 28)
-        del_btn.setStyleSheet("QPushButton { border: none; color: #c04040; font-size: 14px; font-weight: bold; } QPushButton:hover { color: #ff4444; background: #2a1515; border-radius: 4px; }")
+        del_btn.setStyleSheet("QPushButton { border: none; color: #c04040; font-size: 14px; font-weight: bold; } QPushButton:hover { color: #ff4444; background: #2a2a2a; border-radius: 4px; }")
         del_btn.clicked.connect(lambda: self.deleted.emit(self))
 
         layout.addWidget(self.time_combo)

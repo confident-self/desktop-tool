@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QSpinBox, QFrame, QFileDialog, QColorDialog, QMessageBox
+    QSpinBox, QSlider, QFrame, QFileDialog, QColorDialog, QMessageBox
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -12,6 +12,7 @@ from app.config import (
     get_overdue_color, set_overdue_color,
     get_font_size, set_font_size,
     get_autostart, set_autostart,
+    get_transparency, set_transparency,
 )
 from app.db import export_all_data, clear_all_data
 
@@ -57,6 +58,22 @@ class SettingsPage(QWidget):
             self._spin(get_font_size(), 10, 36, set_font_size)
         ))
 
+        # 便签透明度
+        transp_layout = QHBoxLayout()
+        transp_layout.addWidget(QLabel("便签透明度"))
+        self._transp_slider = QSlider(Qt.Orientation.Horizontal)
+        self._transp_slider.setRange(0, 100)
+        self._transp_slider.setValue(get_transparency())
+        self._transp_slider.setFixedWidth(180)
+        self._transp_slider.valueChanged.connect(self._on_transparency_changed)
+        self._transp_label = QLabel(f"{get_transparency()}%")
+        self._transp_label.setFixedWidth(40)
+        self._transp_label.setStyleSheet("color: #888;")
+        transp_layout.addWidget(self._transp_slider)
+        transp_layout.addWidget(self._transp_label)
+        transp_layout.addStretch()
+        layout.addLayout(transp_layout)
+
         # 开机自启
         auto_layout = QHBoxLayout()
         auto_layout.addWidget(QLabel("开机自启"))
@@ -94,6 +111,10 @@ class SettingsPage(QWidget):
 
     def refresh(self):
         self._color_btn.setStyleSheet(f"QPushButton {{ background: {get_overdue_color()}; border: 1px solid #3a3a3a; border-radius: 4px; }}")
+        self._transp_slider.blockSignals(True)
+        self._transp_slider.setValue(get_transparency())
+        self._transp_slider.blockSignals(False)
+        self._transp_label.setText(f"{get_transparency()}%")
 
     def _setting_row(self, label: str, widget: QWidget) -> QHBoxLayout:
         row = QHBoxLayout()
@@ -109,6 +130,11 @@ class SettingsPage(QWidget):
         spin.setFixedWidth(72)
         spin.valueChanged.connect(lambda v: [setter(v), self.settings_changed.emit()])
         return spin
+
+    def _on_transparency_changed(self, value: int):
+        set_transparency(value)
+        self._transp_label.setText(f"{value}%")
+        self.settings_changed.emit()
 
     def _pick_color(self):
         color = QColorDialog.getColor(QColor(get_overdue_color()), self, "选择超时提醒颜色")
