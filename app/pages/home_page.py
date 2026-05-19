@@ -120,7 +120,7 @@ class HomePage(QWidget):
         self._prev_btn.clicked.connect(self._prev_day)
 
         self._date_label = QLabel(self._selected_date)
-        self._date_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0;")
+        self._date_label.setStyleSheet("font-size: 15px; font-weight: bold;")
         self._date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._next_btn = QPushButton("▶")
@@ -160,7 +160,7 @@ class HomePage(QWidget):
         # 分隔线
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
+        sep.setProperty("HLine", True)
         layout.addWidget(sep)
 
         # 事项列表

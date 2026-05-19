@@ -70,16 +70,12 @@ class StickyOverlay(QWidget):
         self._font_size = get_font_size()
         self._update_size()
         self._refresh_colors()
-        self._apply_transparency()
+        self.setWindowOpacity(1.0)
         if not self._tasks:
             self.hide()
         else:
             self.show()
             self._refresh_timer.start()
-
-    def _apply_transparency(self):
-        val = get_transparency()
-        self.setWindowOpacity(max(0.1, val / 100.0))
 
     def _update_size(self):
         row_h = self._font_size + 14
@@ -112,9 +108,10 @@ class StickyOverlay(QWidget):
         title_h = 28
         w, h = self.width(), self.height()
 
-        # 背景
+        # 背景 — 透明度由设置滑条控制
         if self._hovered:
-            painter.setBrush(QColor(18, 18, 18, 200))
+            bg_alpha = int(get_transparency() / 100.0 * 220)
+            painter.setBrush(QColor(18, 18, 18, bg_alpha))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawRoundedRect(0, 0, w, h, 8, 8)
 

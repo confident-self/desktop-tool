@@ -13,12 +13,14 @@ from app.config import (
     get_font_size, set_font_size,
     get_autostart, set_autostart,
     get_transparency, set_transparency,
+    get_theme, set_theme,
 )
 from app.db import export_all_data, clear_all_data
 
 
 class SettingsPage(QWidget):
     settings_changed = Signal()
+    theme_changed = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,12 +29,12 @@ class SettingsPage(QWidget):
         layout.setSpacing(16)
 
         title = QLabel("设置")
-        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0;")
+        title.setStyleSheet("font-size: 15px; font-weight: bold;")
         layout.addWidget(title)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
+        sep.setProperty("HLine", True)
         layout.addWidget(sep)
 
         # 显示条数
@@ -58,6 +60,25 @@ class SettingsPage(QWidget):
             self._spin(get_font_size(), 10, 36, set_font_size)
         ))
 
+        # 主题切换
+        theme_layout = QHBoxLayout()
+        theme_layout.addWidget(QLabel("界面主题"))
+        self._theme_dark = QPushButton("深色")
+        self._theme_light = QPushButton("浅色")
+        self._theme_dark.setFixedWidth(56)
+        self._theme_light.setFixedWidth(56)
+        self._theme_dark.setCheckable(True)
+        self._theme_light.setCheckable(True)
+        current = get_theme()
+        self._theme_dark.setChecked(current == "dark")
+        self._theme_light.setChecked(current == "light")
+        self._theme_dark.clicked.connect(lambda: self._on_theme_switch("dark"))
+        self._theme_light.clicked.connect(lambda: self._on_theme_switch("light"))
+        theme_layout.addWidget(self._theme_dark)
+        theme_layout.addWidget(self._theme_light)
+        theme_layout.addStretch()
+        layout.addLayout(theme_layout)
+
         # 便签透明度
         transp_layout = QHBoxLayout()
         transp_layout.addWidget(QLabel("便签透明度"))
@@ -68,7 +89,7 @@ class SettingsPage(QWidget):
         self._transp_slider.valueChanged.connect(self._on_transparency_changed)
         self._transp_label = QLabel(f"{get_transparency()}%")
         self._transp_label.setFixedWidth(40)
-        self._transp_label.setStyleSheet("color: #6a6a6a;")
+        self._transp_label.setStyleSheet("")
         transp_layout.addWidget(self._transp_slider)
         transp_layout.addWidget(self._transp_label)
         transp_layout.addStretch()
@@ -130,6 +151,12 @@ class SettingsPage(QWidget):
         spin.setFixedWidth(72)
         spin.valueChanged.connect(lambda v: [setter(v), self.settings_changed.emit()])
         return spin
+
+    def _on_theme_switch(self, theme: str):
+        set_theme(theme)
+        self._theme_dark.setChecked(theme == "dark")
+        self._theme_light.setChecked(theme == "light")
+        self.theme_changed.emit(theme)
 
     def _on_transparency_changed(self, value: int):
         set_transparency(value)

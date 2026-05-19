@@ -134,12 +134,12 @@ class TasksPage(QWidget):
         layout.setSpacing(0)
 
         title = QLabel("事项记录")
-        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0; margin-bottom: 8px;")
+        title.setStyleSheet("font-size: 15px; font-weight: bold; margin-bottom: 8px;")
         layout.addWidget(title)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
+        sep.setProperty("HLine", True)
         layout.addWidget(sep)
 
         # 滚动区域
