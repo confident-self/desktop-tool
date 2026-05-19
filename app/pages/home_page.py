@@ -46,12 +46,12 @@ class TaskRow(QFrame):
         self.content_edit = QLineEdit(task.get("content", ""))
         self.content_edit.setPlaceholderText("输入事项...")
         self.content_edit.textChanged.connect(self._on_changed)
-        self.content_edit.setStyleSheet("QLineEdit { border: 1px solid #2a2a2a; background: #121212; }")
+        self.content_edit.setStyleSheet("QLineEdit { border: 1px solid #1e1e1e; background: #0e0e0e; border-radius: 4px; } QLineEdit:focus { border-color: #333; background: #111; }")
 
         # 删除
         del_btn = QPushButton("✕")
         del_btn.setFixedSize(28, 28)
-        del_btn.setStyleSheet("QPushButton { border: none; color: #c04040; font-size: 14px; font-weight: bold; } QPushButton:hover { color: #ff4444; background: #2a2a2a; border-radius: 4px; }")
+        del_btn.setStyleSheet("QPushButton { border: none; color: #8a4a4a; font-size: 16px; font-weight: bold; } QPushButton:hover { color: #d95a5a; background: #1a1212; border-radius: 4px; }")
         del_btn.clicked.connect(lambda: self.deleted.emit(self))
 
         layout.addWidget(self.time_combo)
@@ -116,21 +116,21 @@ class HomePage(QWidget):
         date_layout = QHBoxLayout()
         self._prev_btn = QPushButton("◀")
         self._prev_btn.setFixedWidth(36)
-        self._prev_btn.setStyleSheet("QPushButton { border: none; color: #888; } QPushButton:hover { color: #ccc; }")
+        self._prev_btn.setStyleSheet("QPushButton { border: none; color: #6a6a6a; font-size: 14px; } QPushButton:hover { color: #b0b0b0; }")
         self._prev_btn.clicked.connect(self._prev_day)
 
         self._date_label = QLabel(self._selected_date)
-        self._date_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #d4d4d4;")
+        self._date_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0;")
         self._date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._next_btn = QPushButton("▶")
         self._next_btn.setFixedWidth(36)
-        self._next_btn.setStyleSheet("QPushButton { border: none; color: #888; } QPushButton:hover { color: #ccc; }")
+        self._next_btn.setStyleSheet("QPushButton { border: none; color: #6a6a6a; font-size: 14px; } QPushButton:hover { color: #b0b0b0; }")
         self._next_btn.clicked.connect(self._next_day)
 
         self._today_btn = QPushButton("今天")
         self._today_btn.setFixedWidth(56)
-        self._today_btn.setStyleSheet("QPushButton { border: none; color: #888; } QPushButton:hover { color: #ccc; }")
+        self._today_btn.setStyleSheet("QPushButton { border: none; color: #6a6a6a; font-size: 12px; } QPushButton:hover { color: #b0b0b0; }")
         self._today_btn.clicked.connect(self._go_today)
 
         date_layout.addStretch()
@@ -160,7 +160,7 @@ class HomePage(QWidget):
         # 分隔线
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #2a2a2a; }")
+        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
         layout.addWidget(sep)
 
         # 事项列表
@@ -171,7 +171,7 @@ class HomePage(QWidget):
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setWidget(task_container)
-        self._scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        self._scroll.setStyleSheet("QScrollArea { border: none; background: transparent; } QScrollArea > QWidget > QWidget { background: transparent; }")
         self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         layout.addWidget(self._scroll, 1)
 
@@ -183,8 +183,8 @@ class HomePage(QWidget):
         action_layout.addStretch()
         self._start_btn = QPushButton("▶ 开始")
         self._start_btn.setStyleSheet("""
-            QPushButton { border: none; background: #2a4a3a; color: #7ecf8a; font-weight: bold; padding: 10px 28px; }
-            QPushButton:hover { background: #345a4a; }
+            QPushButton { border: none; background: #1c3628; color: #6fbf81; font-weight: bold; padding: 10px 28px; border-radius: 8px; }
+            QPushButton:hover { background: #244430; color: #86d698; }
         """)
         self._start_btn.clicked.connect(self._toggle_start)
         action_layout.addWidget(self._start_btn)
@@ -281,12 +281,12 @@ class HomePage(QWidget):
         if running:
             self._start_btn.setText("■ 暂停")
             self._start_btn.setStyleSheet("""
-                QPushButton { border: none; background: #4a2a2a; color: #e08888; font-weight: bold; padding: 10px 28px; }
-                QPushButton:hover { background: #5a3a3a; }
+                QPushButton { border: none; background: #2e1a1a; color: #d95a5a; font-weight: bold; padding: 10px 28px; border-radius: 8px; }
+                QPushButton:hover { background: #3a2222; color: #e87070; }
             """)
         else:
             self._start_btn.setText("▶ 开始")
             self._start_btn.setStyleSheet("""
-                QPushButton { border: none; background: #2a4a3a; color: #7ecf8a; font-weight: bold; padding: 10px 28px; }
-                QPushButton:hover { background: #345a4a; }
+                QPushButton { border: none; background: #1c3628; color: #6fbf81; font-weight: bold; padding: 10px 28px; border-radius: 8px; }
+                QPushButton:hover { background: #244430; color: #86d698; }
             """)

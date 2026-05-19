@@ -114,7 +114,7 @@ class StickyOverlay(QWidget):
 
         # 背景
         if self._hovered:
-            painter.setBrush(QColor(30, 30, 30, 180))
+            painter.setBrush(QColor(18, 18, 18, 200))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawRoundedRect(0, 0, w, h, 8, 8)
 
@@ -122,7 +122,7 @@ class StickyOverlay(QWidget):
         font = QFont("Microsoft YaHei", self._font_size - 2, QFont.Weight.Bold)
         painter.setFont(font)
         if self._hovered:
-            painter.setPen(QColor("#999999"))
+            painter.setPen(QColor("#808080"))
             painter.drawText(10, 4, 100, title_h - 4, Qt.AlignmentFlag.AlignVCenter, "今日事项")
 
         # 关闭按钮
@@ -131,7 +131,7 @@ class StickyOverlay(QWidget):
         self._close_rect = QRect(close_x, close_y, 20, 20)
         self._title_rect = QRect(0, 0, w, title_h)
         if self._hovered:
-            painter.setPen(QColor("#888888"))
+            painter.setPen(QColor("#707070"))
             painter.setFont(QFont("Microsoft YaHei", 14))
             painter.drawText(self._close_rect, Qt.AlignmentFlag.AlignCenter, "×")
 
@@ -157,7 +157,7 @@ class StickyOverlay(QWidget):
             font = QFont("Microsoft YaHei", self._font_size)
             painter.setFont(font)
             if time_str:
-                time_color = self._overdue_color if is_overdue else "#888888"
+                time_color = self._overdue_color if is_overdue else "#7a7a7a"
                 if self._hovered:
                     painter.setPen(QColor(time_color))
                 else:
@@ -180,11 +180,11 @@ class StickyOverlay(QWidget):
 
             # 分隔线
             if i < len(self._tasks) - 1 and self._hovered:
-                painter.setPen(QPen(QColor(60, 60, 60), 0.5))
+                painter.setPen(QPen(QColor(40, 40, 40), 0.5))
                 painter.drawLine(text_x, y + row_h - 1, w - 12, y + row_h - 1)
 
         if not self._tasks:
-            painter.setPen(QColor("#888888"))
+            painter.setPen(QColor("#5a5a5a"))
             font = QFont("Microsoft YaHei", self._font_size)
             painter.setFont(font)
             painter.drawText(0, 0, w, h, Qt.AlignmentFlag.AlignCenter, "所有事项已完成")

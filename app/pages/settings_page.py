@@ -27,12 +27,12 @@ class SettingsPage(QWidget):
         layout.setSpacing(16)
 
         title = QLabel("设置")
-        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #d4d4d4;")
+        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0;")
         layout.addWidget(title)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #2a2a2a; }")
+        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
         layout.addWidget(sep)
 
         # 显示条数
@@ -68,7 +68,7 @@ class SettingsPage(QWidget):
         self._transp_slider.valueChanged.connect(self._on_transparency_changed)
         self._transp_label = QLabel(f"{get_transparency()}%")
         self._transp_label.setFixedWidth(40)
-        self._transp_label.setStyleSheet("color: #888;")
+        self._transp_label.setStyleSheet("color: #6a6a6a;")
         transp_layout.addWidget(self._transp_slider)
         transp_layout.addWidget(self._transp_label)
         transp_layout.addStretch()
@@ -89,7 +89,7 @@ class SettingsPage(QWidget):
 
         # 数据管理
         mgmt_label = QLabel("数据管理")
-        mgmt_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #999; margin-top: 16px;")
+        mgmt_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #7a7a7a; margin-top: 16px;")
         layout.addWidget(mgmt_label)
 
         data_layout = QHBoxLayout()
@@ -97,7 +97,7 @@ class SettingsPage(QWidget):
         export_btn.clicked.connect(self._export_data)
         data_layout.addWidget(export_btn)
         clear_btn = QPushButton("清空所有数据")
-        clear_btn.setStyleSheet("QPushButton { border-color: #5a3a3a; color: #e08888; } QPushButton:hover { background: #3a2020; }")
+        clear_btn.setStyleSheet("QPushButton { border-color: #3a1e1e; color: #c06060; } QPushButton:hover { background: #1a0e0e; color: #d95a5a; border-color: #4a2828; }")
         clear_btn.clicked.connect(self._clear_data)
         data_layout.addWidget(clear_btn)
         data_layout.addStretch()
@@ -105,7 +105,7 @@ class SettingsPage(QWidget):
 
         # 版本
         version_lbl = QLabel("版本: 1.0.0")
-        version_lbl.setStyleSheet("color: #555; font-size: 11px;")
+        version_lbl.setStyleSheet("color: #3a3a3a; font-size: 11px;")
         version_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version_lbl)
 
@@ -155,9 +155,9 @@ class SettingsPage(QWidget):
     def _update_auto_style(self):
         enabled = get_autostart()
         if enabled:
-            self._auto_btn.setStyleSheet("QPushButton { background: #2a4a3a; color: #7ecf8a; border: 1px solid #3a5a3a; border-radius: 4px; }")
+            self._auto_btn.setStyleSheet("QPushButton { background: #1c3628; color: #6fbf81; border: 1px solid #2a4a32; border-radius: 4px; } QPushButton:hover { background: #244430; }")
         else:
-            self._auto_btn.setStyleSheet("QPushButton { background: #2a2a2a; color: #888; border: 1px solid #3a3a3a; border-radius: 4px; }")
+            self._auto_btn.setStyleSheet("QPushButton { background: #181818; color: #6a6a6a; border: 1px solid #222222; border-radius: 4px; } QPushButton:hover { background: #1e1e1e; }")
 
     def _apply_autostart(self, enabled: bool):
         import sys

@@ -27,7 +27,7 @@ class TaskItemWidget(QFrame):
         self._check_btn.setFixedSize(24, 24)
         is_done = task["status"] == "done"
         clr = "#555" if is_done else "#888"
-        self._check_btn.setStyleSheet(f"QPushButton {{ border: none; color: {clr}; font-size: 16px; }} QPushButton:hover {{ color: #ccc; }}")
+        self._check_btn.setStyleSheet(f"QPushButton {{ border: none; color: {clr}; font-size: 16px; }} QPushButton:hover {{ color: #b0b0b0; }}")
         self._check_btn.clicked.connect(self._toggle_status)
         layout.addWidget(self._check_btn)
 
@@ -35,14 +35,14 @@ class TaskItemWidget(QFrame):
         time_str = task.get("time_label") or ""
         time_lbl = QLabel(time_str)
         time_lbl.setFixedWidth(52)
-        time_lbl.setStyleSheet("color: #666; font-size: 12px;")
+        time_lbl.setStyleSheet("color: #5a5a5a; font-size: 12px;")
         layout.addWidget(time_lbl)
 
         # 内容
         content_lbl = QLabel(task["content"])
-        content_lbl.setStyleSheet("color: #d4d4d4; font-size: 13px;")
+        content_lbl.setStyleSheet("color: #c8c8c8; font-size: 13px;")
         if is_done:
-            content_lbl.setStyleSheet("color: #555; font-size: 13px; text-decoration: line-through;")
+            content_lbl.setStyleSheet("color: #4a4a4a; font-size: 13px; text-decoration: line-through;")
         layout.addWidget(content_lbl, 1)
 
         # 备注图标 + 输入
@@ -50,13 +50,13 @@ class TaskItemWidget(QFrame):
         self._note_edit = QLineEdit(task.get("note", ""))
         self._note_edit.setPlaceholderText("备注...")
         self._note_edit.setMaximumWidth(0)
-        self._note_edit.setStyleSheet("QLineEdit { border: 1px solid #2a2a2a; background: #121212; }")
+        self._note_edit.setStyleSheet("QLineEdit { border: 1px solid #1e1e1e; background: #0e0e0e; border-radius: 3px; }")
         self._note_edit.textChanged.connect(self._on_note_changed)
         layout.addWidget(self._note_edit)
 
         note_btn = QPushButton("📝" if task.get("note") else "💬")
         note_btn.setFixedSize(28, 28)
-        note_btn.setStyleSheet("QPushButton { border: none; color: #555; font-size: 12px; } QPushButton:hover { color: #ccc; }")
+        note_btn.setStyleSheet("QPushButton { border: none; color: #4a4a4a; font-size: 12px; } QPushButton:hover { color: #b0b0b0; }")
         note_btn.clicked.connect(self._toggle_note)
         layout.addWidget(note_btn)
 
@@ -68,7 +68,7 @@ class TaskItemWidget(QFrame):
         is_done = new_status == "done"
         clr = "#555" if is_done else "#888"
         self._check_btn.setText("●" if is_done else "○")
-        self._check_btn.setStyleSheet(f"QPushButton {{ border: none; color: {clr}; font-size: 16px; }} QPushButton:hover {{ color: #ccc; }}")
+        self._check_btn.setStyleSheet(f"QPushButton {{ border: none; color: {clr}; font-size: 16px; }} QPushButton:hover {{ color: #b0b0b0; }}")
 
     def _toggle_note(self):
         self._note_visible = not self._note_visible
@@ -97,9 +97,9 @@ class DateGroup(QFrame):
         # 日期头
         header = QPushButton(f"▼ {date_str}")
         header.setStyleSheet("""
-            QPushButton { border: none; border-bottom: 1px solid #2a2a2a; text-align: left; padding: 8px 16px;
-                color: #888; font-size: 12px; font-weight: bold; background: transparent; }
-            QPushButton:hover { color: #ccc; background: #141414; }
+            QPushButton { border: none; border-bottom: 1px solid #1a1a1a; text-align: left; padding: 8px 16px;
+                color: #7a7a7a; font-size: 12px; font-weight: bold; background: transparent; }
+            QPushButton:hover { color: #b0b0b0; background: #111111; }
         """)
         header.clicked.connect(self._toggle)
         self._header = header
@@ -134,18 +134,18 @@ class TasksPage(QWidget):
         layout.setSpacing(0)
 
         title = QLabel("事项记录")
-        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #d4d4d4; margin-bottom: 8px;")
+        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #e0e0e0; margin-bottom: 8px;")
         layout.addWidget(title)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("QFrame { color: #2a2a2a; }")
+        sep.setStyleSheet("QFrame { color: #1a1a1a; }")
         layout.addWidget(sep)
 
         # 滚动区域
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; } QScrollArea > QWidget > QWidget { background: transparent; }")
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._container = QWidget()
