@@ -12,6 +12,7 @@ build/
 .vscode/
 .idea/
 .superpowers/
+.worktrees/
 
 # 系统
 .DS_Store
