@@ -34,6 +34,10 @@ class PreferenceSettingsTest(unittest.TestCase):
         config.SETTINGS.setValue("sticky/width", 9999)
         self.assertEqual(config.get_sticky_width(), config.STICKY_MAX_WIDTH)
 
+    def test_sticky_width_round_trips_after_resize_save(self):
+        config.set_sticky_width(412)
+        self.assertEqual(config.get_sticky_width(), 412)
+
     def test_active_task_context_round_trips(self):
         config.set_active_task(42, "2026-05-21T09:30:00")
 
