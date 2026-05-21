@@ -3,6 +3,7 @@ import os
 from datetime import date
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "keenpie.db")
+DEFAULT_CATEGORIES = ["学习", "工作", "娱乐", "生活"]
 
 
 def _ensure_dir():
@@ -26,6 +27,7 @@ def init_db():
             date TEXT NOT NULL,
             sort_order INTEGER NOT NULL DEFAULT 0,
             content TEXT NOT NULL DEFAULT '',
+            category TEXT NOT NULL DEFAULT '生活',
             time_label TEXT,
             time_value TEXT,
             status TEXT NOT NULL DEFAULT 'pending',
@@ -33,10 +35,54 @@ def init_db():
             metadata TEXT DEFAULT '{}'
         )
     """)
+    columns = [row["name"] for row in conn.execute("PRAGMA table_info(task_items)").fetchall()]
+    if "category" not in columns:
+        conn.execute("ALTER TABLE task_items ADD COLUMN category TEXT NOT NULL DEFAULT '生活'")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS task_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            is_default INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+    for i, name in enumerate(DEFAULT_CATEGORIES):
+        conn.execute("""
+            INSERT OR IGNORE INTO task_categories (name, sort_order, is_default)
+            VALUES (?, ?, 1)
+        """, (name, i))
     conn.execute("CREATE INDEX IF NOT EXISTS idx_date_order ON task_items(date, sort_order)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_date_status ON task_items(date, status)")
     conn.commit()
     conn.close()
+
+
+def get_categories() -> list[str]:
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT name FROM task_categories ORDER BY sort_order, id"
+    ).fetchall()
+    conn.close()
+    return [row["name"] for row in rows] or DEFAULT_CATEGORIES.copy()
+
+
+def add_category(name: str) -> bool:
+    cleaned = name.strip()
+    if not cleaned:
+        return False
+    conn = get_conn()
+    max_order = conn.execute("SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM task_categories").fetchone()["max_order"]
+    try:
+        conn.execute(
+            "INSERT INTO task_categories (name, sort_order, is_default) VALUES (?, ?, 0)",
+            (cleaned, max_order + 1)
+        )
+    except sqlite3.IntegrityError:
+        conn.close()
+        return False
+    conn.commit()
+    conn.close()
+    return True
 
 
 def get_tasks_by_date(target_date: str) -> list[dict]:
@@ -64,10 +110,11 @@ def upsert_task(task: dict) -> int:
     if task.get("id"):
         conn.execute("""
             UPDATE task_items
-            SET date=?, sort_order=?, content=?, time_label=?, time_value=?, status=?, note=?, metadata=?
+            SET date=?, sort_order=?, content=?, category=?, time_label=?, time_value=?, status=?, note=?, metadata=?
             WHERE id=?
         """, (
             task["date"], task["sort_order"], task["content"],
+            task.get("category") or "生活",
             task.get("time_label"), task.get("time_value"),
             task.get("status", "pending"), task.get("note", ""),
             task.get("metadata", "{}"), task["id"]
@@ -77,10 +124,11 @@ def upsert_task(task: dict) -> int:
         return task["id"]
     else:
         cur = conn.execute("""
-            INSERT INTO task_items (date, sort_order, content, time_label, time_value, status, note, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO task_items (date, sort_order, content, category, time_label, time_value, status, note, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             task["date"], task["sort_order"], task["content"],
+            task.get("category") or "生活",
             task.get("time_label"), task.get("time_value"),
             task.get("status", "pending"), task.get("note", ""),
             task.get("metadata", "{}")

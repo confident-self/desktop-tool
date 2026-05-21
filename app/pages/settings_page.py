@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QSpinBox, QSlider, QFrame, QFileDialog, QColorDialog, QMessageBox
+    QSpinBox, QSlider, QFrame, QFileDialog, QColorDialog, QMessageBox, QScrollArea
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -24,13 +24,30 @@ class SettingsPage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 20, 24, 16)
-        layout.setSpacing(16)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(22, 18, 22, 16)
+        root_layout.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; } QScrollArea > QWidget > QWidget { background: transparent; }")
+        root_layout.addWidget(scroll)
+
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
 
         title = QLabel("设置")
-        title.setStyleSheet("font-size: 15px; font-weight: bold;")
+        title.setProperty("title", True)
         layout.addWidget(title)
+
+        tip = QLabel("控制置顶便签展示、启动行为和数据维护")
+        tip.setProperty("muted", True)
+        tip.setWordWrap(True)
+        layout.addWidget(tip)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
@@ -79,9 +96,9 @@ class SettingsPage(QWidget):
         theme_layout.addStretch()
         layout.addLayout(theme_layout)
 
-        # 便签透明度
+        # 非悬浮便签透明度
         transp_layout = QHBoxLayout()
-        transp_layout.addWidget(QLabel("便签透明度"))
+        transp_layout.addWidget(QLabel("非悬浮透明度"))
         self._transp_slider = QSlider(Qt.Orientation.Horizontal)
         self._transp_slider.setRange(0, 100)
         self._transp_slider.setValue(get_transparency())
@@ -110,7 +127,7 @@ class SettingsPage(QWidget):
 
         # 数据管理
         mgmt_label = QLabel("数据管理")
-        mgmt_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #7a7a7a; margin-top: 16px;")
+        mgmt_label.setStyleSheet("font-size: 13px; font-weight: bold; margin-top: 12px;")
         layout.addWidget(mgmt_label)
 
         data_layout = QHBoxLayout()
@@ -118,7 +135,7 @@ class SettingsPage(QWidget):
         export_btn.clicked.connect(self._export_data)
         data_layout.addWidget(export_btn)
         clear_btn = QPushButton("清空所有数据")
-        clear_btn.setStyleSheet("QPushButton { border-color: #3a1e1e; color: #c06060; } QPushButton:hover { background: #1a0e0e; color: #d95a5a; border-color: #4a2828; }")
+        clear_btn.setProperty("danger", True)
         clear_btn.clicked.connect(self._clear_data)
         data_layout.addWidget(clear_btn)
         data_layout.addStretch()
@@ -126,7 +143,8 @@ class SettingsPage(QWidget):
 
         # 版本
         version_lbl = QLabel("版本: 1.0.0")
-        version_lbl.setStyleSheet("color: #3a3a3a; font-size: 11px;")
+        version_lbl.setProperty("muted", True)
+        version_lbl.setStyleSheet("font-size: 11px;")
         version_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version_lbl)
 
@@ -181,10 +199,9 @@ class SettingsPage(QWidget):
 
     def _update_auto_style(self):
         enabled = get_autostart()
-        if enabled:
-            self._auto_btn.setStyleSheet("QPushButton { background: #1c3628; color: #6fbf81; border: 1px solid #2a4a32; border-radius: 4px; } QPushButton:hover { background: #244430; }")
-        else:
-            self._auto_btn.setStyleSheet("QPushButton { background: #181818; color: #6a6a6a; border: 1px solid #222222; border-radius: 4px; } QPushButton:hover { background: #1e1e1e; }")
+        self._auto_btn.setProperty("accent", enabled)
+        self._auto_btn.style().unpolish(self._auto_btn)
+        self._auto_btn.style().polish(self._auto_btn)
 
     def _apply_autostart(self, enabled: bool):
         import sys

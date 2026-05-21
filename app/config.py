@@ -47,7 +47,7 @@ def set_transparency(value: int):
 
 
 def get_theme() -> str:
-    return SETTINGS.value("display/theme", "dark")
+    return SETTINGS.value("display/theme", "light")
 
 
 def set_theme(theme: str):

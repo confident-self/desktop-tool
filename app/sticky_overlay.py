@@ -25,6 +25,12 @@ def _is_overdue(task: dict) -> bool:
     return False
 
 
+def _ui_font(size: int, weight=QFont.Weight.Normal) -> QFont:
+    font = QFont("Microsoft YaHei UI", size, weight)
+    font.setStyleHint(QFont.StyleHint.SansSerif)
+    return font
+
+
 class StickyOverlay(QWidget):
     done_toggled = Signal(int, str)
     closed = Signal()
@@ -78,11 +84,11 @@ class StickyOverlay(QWidget):
             self._refresh_timer.start()
 
     def _update_size(self):
-        row_h = self._font_size + 14
+        row_h = self._font_size + 18
         count = len(self._tasks)
-        title_h = 28
-        w = 280
-        h = title_h + count * row_h + 8
+        title_h = 30
+        w = 310
+        h = title_h + count * row_h + 10
         self.setFixedSize(w, h)
 
     def _refresh_colors(self):
@@ -104,23 +110,26 @@ class StickyOverlay(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        row_h = self._font_size + 14
-        title_h = 28
+        row_h = self._font_size + 18
+        title_h = 30
         w, h = self.width(), self.height()
 
-        # 背景 — 透明度由设置滑条控制
+        # 非悬浮时透明度由设置滑条控制：100 表示完全透明。
         if self._hovered:
-            bg_alpha = int(get_transparency() / 100.0 * 220)
-            painter.setBrush(QColor(18, 18, 18, bg_alpha))
+            bg_alpha = 232
+        else:
+            bg_alpha = int((100 - get_transparency()) / 100.0 * 190)
+        if bg_alpha > 0:
+            painter.setBrush(QColor(18, 20, 24, bg_alpha))
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawRoundedRect(0, 0, w, h, 8, 8)
+            painter.drawRoundedRect(0, 0, w, h, 10, 10)
 
         # 标题区（hover 可见）
-        font = QFont("Microsoft YaHei", self._font_size - 2, QFont.Weight.Bold)
+        font = _ui_font(max(self._font_size - 2, 10), QFont.Weight.DemiBold)
         painter.setFont(font)
         if self._hovered:
-            painter.setPen(QColor("#808080"))
-            painter.drawText(10, 4, 100, title_h - 4, Qt.AlignmentFlag.AlignVCenter, "今日事项")
+            painter.setPen(QColor("#aeb7c2"))
+            painter.drawText(12, 4, 110, title_h - 4, Qt.AlignmentFlag.AlignVCenter, "今日事项")
 
         # 关闭按钮
         close_x = w - 24
@@ -128,8 +137,8 @@ class StickyOverlay(QWidget):
         self._close_rect = QRect(close_x, close_y, 20, 20)
         self._title_rect = QRect(0, 0, w, title_h)
         if self._hovered:
-            painter.setPen(QColor("#707070"))
-            painter.setFont(QFont("Microsoft YaHei", 14))
+            painter.setPen(QColor("#9aa3ad"))
+            painter.setFont(_ui_font(14, QFont.Weight.DemiBold))
             painter.drawText(self._close_rect, Qt.AlignmentFlag.AlignCenter, "×")
 
         self._toggle_rects = []
@@ -137,21 +146,22 @@ class StickyOverlay(QWidget):
         for i, task in enumerate(self._tasks):
             y = title_h + i * row_h
             row_rect = QRect(0, y, w, row_h)
-            toggle_rect = QRect(8, y + (row_h - 16) // 2, 16, 16)
+            toggle_rect = QRect(10, y + (row_h - 16) // 2, 16, 16)
             self._toggle_rects.append(toggle_rect)
 
             is_overdue = _is_overdue(task)
 
             # 圆圈 — 仅 hover 时可见
             if self._hovered:
-                painter.setPen(QPen(QColor("#cccccc"), 1.5))
+                painter.setPen(QPen(QColor("#cfd6df"), 1.5))
                 painter.setBrush(Qt.BrushStyle.NoBrush)
                 painter.drawEllipse(toggle_rect)
 
             # 时间标签
             time_str = task.get("time_label") or ""
-            text_x = 32
-            font = QFont("Microsoft YaHei", self._font_size)
+            category = task.get("category") or "生活"
+            text_x = 34
+            font = _ui_font(self._font_size, QFont.Weight.Medium)
             painter.setFont(font)
             if time_str:
                 time_color = self._overdue_color if is_overdue else "#7a7a7a"
@@ -161,7 +171,18 @@ class StickyOverlay(QWidget):
                     base = self._text_colors[i] if i < len(self._text_colors) else "#e0e0e0"
                     painter.setPen(QColor(base))
                 painter.drawText(text_x, y, 50, row_h, Qt.AlignmentFlag.AlignVCenter, time_str)
-                text_x += 55
+                text_x += 56
+
+            if self._hovered:
+                pill_rect = QRect(text_x, y + (row_h - 20) // 2, 42, 20)
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QColor("#173c31"))
+                painter.drawRoundedRect(pill_rect, 8, 8)
+                painter.setPen(QColor("#72e5ad"))
+                painter.setFont(_ui_font(10, QFont.Weight.DemiBold))
+                painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, category[:2])
+                text_x += 48
+                painter.setFont(font)
 
             # 内容文字
             if is_overdue:
@@ -182,7 +203,7 @@ class StickyOverlay(QWidget):
 
         if not self._tasks:
             painter.setPen(QColor("#5a5a5a"))
-            font = QFont("Microsoft YaHei", self._font_size)
+            font = _ui_font(self._font_size, QFont.Weight.Medium)
             painter.setFont(font)
             painter.drawText(0, 0, w, h, Qt.AlignmentFlag.AlignCenter, "所有事项已完成")
 
