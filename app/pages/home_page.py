@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from datetime import date, timedelta
 
+from app.config import get_input_time_mode, set_input_time_mode
 from app.db import get_categories, get_tasks_by_date, upsert_task, delete_task, reorder_tasks
 
 PERIOD_OPTIONS = ["上午", "中午", "下午", "晚上", "凌晨"]
@@ -123,7 +124,7 @@ class HomePage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._selected_date = str(date.today())
-        self._time_mode = "precise"
+        self._time_mode = get_input_time_mode()
         self._categories = get_categories()
         self._task_rows: list[TaskRow] = []
         self._running = False
@@ -320,6 +321,7 @@ class HomePage(QWidget):
 
     def _on_mode_changed(self, btn):
         self._time_mode = btn.property("mode")
+        set_input_time_mode(self._time_mode)
         for row in self._task_rows:
             row.set_time_mode(self._time_mode)
             row._on_changed()
