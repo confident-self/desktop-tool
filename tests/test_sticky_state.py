@@ -38,3 +38,8 @@ class StickyStateTest(unittest.TestCase):
 
     def test_completion_message_is_encouraging(self):
         self.assertIn("推进", complete_message("写周报"))
+
+    def test_missing_active_task_returns_list_mode(self):
+        missing = get_active_task(TASKS, 77)
+        self.assertIsNone(missing)
+        self.assertEqual(normalize_view_mode("active", missing), "list")
