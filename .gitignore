@@ -13,6 +13,7 @@ build/
 .idea/
 .superpowers/
 .worktrees/
+docs/superpowers/
 
 # 系统
 .DS_Store
