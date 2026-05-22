@@ -38,6 +38,15 @@ class PreferenceSettingsTest(unittest.TestCase):
         config.set_sticky_width(412)
         self.assertEqual(config.get_sticky_width(), 412)
 
+    def test_sticky_readability_mode_defaults_round_trips_and_rejects_unknown_values(self):
+        self.assertEqual(config.get_sticky_readability_mode(), "soft_panel")
+
+        config.set_sticky_readability_mode("adaptive")
+        self.assertEqual(config.get_sticky_readability_mode(), "adaptive")
+
+        config.SETTINGS.setValue("sticky/readability_mode", "unknown")
+        self.assertEqual(config.get_sticky_readability_mode(), "soft_panel")
+
     def test_active_task_context_round_trips(self):
         config.set_active_task(42, "2026-05-21T09:30:00")
 

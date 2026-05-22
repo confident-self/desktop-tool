@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import QWidget, QApplication
-from PySide6.QtCore import Qt, QPoint, Signal, QRect
+from PySide6.QtCore import Qt, QPoint, Signal, QRect, QTimer
 from PySide6.QtGui import QPainter, QColor, QFont, QPen, QMouseEvent
 from datetime import datetime
 from app.db import get_pending_tasks, update_task_status
+from app.color_adapt import sample_global_rect
 from app.config import (
     clear_active_task,
     get_active_started_at,
@@ -10,6 +11,7 @@ from app.config import (
     get_display_count,
     get_font_size,
     get_overdue_color,
+    get_sticky_readability_mode,
     get_sticky_view_mode,
     get_sticky_width,
     get_transparency,
@@ -24,11 +26,8 @@ from app.sticky_state import (
     normalize_view_mode,
     resize_width,
     start_message,
+    sticky_palette,
 )
-
-TASK_TEXT = QColor("#f4f7fb")
-META_TEXT = QColor("#aeb7c2")
-PANEL_BORDER = QColor(255, 255, 255, 30)
 
 
 def _is_overdue(task: dict) -> bool:
@@ -53,6 +52,12 @@ def _ui_font(size: int, weight=QFont.Weight.Normal) -> QFont:
     font = QFont("Microsoft YaHei UI", size, weight)
     font.setStyleHint(QFont.StyleHint.SansSerif)
     return font
+
+
+def _palette_color(value) -> QColor:
+    if isinstance(value, tuple):
+        return QColor(*value)
+    return QColor(value)
 
 
 class StickyOverlay(QWidget):
@@ -87,8 +92,13 @@ class StickyOverlay(QWidget):
         self._active_task = None
         self._next_task = None
         self._view_mode = get_sticky_view_mode()
+        self._row_brightness: list[int] = []
         self._target_date = ""
         self._message = ""
+
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(2000)
+        self._refresh_timer.timeout.connect(self._refresh_colors)
 
         self._overdue_color = get_overdue_color()
         self._font_size = get_font_size()
@@ -114,11 +124,17 @@ class StickyOverlay(QWidget):
             clear_active_task()
             set_sticky_view_mode("list")
         self._update_size()
+        self._refresh_colors()
         self.setWindowOpacity(1.0)
         if not self._tasks:
+            self._refresh_timer.stop()
             self.hide()
         else:
             self.show()
+            if get_sticky_readability_mode() == "adaptive":
+                self._refresh_timer.start()
+            else:
+                self._refresh_timer.stop()
 
     def _update_size(self):
         row_h = self._font_size + 20
@@ -130,6 +146,30 @@ class StickyOverlay(QWidget):
             h = title_h + count * row_h + 12
         self.setFixedSize(self._panel_width, h)
 
+    def _refresh_colors(self):
+        if get_sticky_readability_mode() != "adaptive":
+            self._row_brightness = []
+            self.update()
+            return
+        geo = self.geometry()
+        brightness_list = sample_global_rect(QRect(geo.left(), geo.top(), geo.width(), geo.height()))
+        title_h = 40
+        total_h = max(self.height(), 1)
+        self._row_brightness = []
+        for i, _ in enumerate(self._tasks):
+            row_top = title_h + i * (total_h - title_h) // max(len(self._tasks), 1)
+            seg_idx = min(row_top * 10 // total_h, 9)
+            self._row_brightness.append(brightness_list[seg_idx])
+        self.update()
+
+    def _palette(self, brightness: int = 128) -> dict:
+        return sticky_palette(
+            get_sticky_readability_mode(),
+            get_transparency(),
+            self._hovered,
+            brightness,
+        )
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -138,16 +178,16 @@ class StickyOverlay(QWidget):
         title_h = 40
         w, h = self.width(), self.height()
 
-        panel_alpha = 232 if self._hovered else max(
-            132, int((100 - get_transparency()) / 100.0 * 110) + 132
-        )
-        painter.setBrush(QColor(18, 22, 28, panel_alpha))
-        painter.setPen(QPen(PANEL_BORDER, 1))
+        palette = self._palette(self._row_brightness[0] if self._row_brightness else 128)
+        panel_r, panel_g, panel_b, panel_alpha = palette["panel"]
+        border_r, border_g, border_b, border_alpha = palette["panel_border"]
+        painter.setBrush(QColor(panel_r, panel_g, panel_b, panel_alpha))
+        painter.setPen(QPen(QColor(border_r, border_g, border_b, border_alpha), 1))
         painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 14, 14)
 
         font = _ui_font(max(self._font_size - 2, 10), QFont.Weight.DemiBold)
         painter.setFont(font)
-        painter.setPen(META_TEXT)
+        painter.setPen(QColor(palette["meta_text"]))
         painter.drawText(16, 7, 110, title_h - 8, Qt.AlignmentFlag.AlignVCenter, "今日聚焦")
         self._mode_rect = QRect(w - 112, 9, 72, 22)
         if self._hovered or self._view_mode == "active":
@@ -174,7 +214,7 @@ class StickyOverlay(QWidget):
             painter.drawLine(w - 6, title_h + 10, w - 6, h - 18)
 
         if self._view_mode == "active":
-            self._paint_active_mode(painter, title_h)
+            self._paint_active_mode(painter, title_h, palette)
             return
 
         self._paint_list_mode(painter, title_h, row_h)
@@ -187,12 +227,14 @@ class StickyOverlay(QWidget):
         # 事项行
         for i, task in enumerate(self._tasks):
             y = title_h + i * row_h
+            brightness = self._row_brightness[i] if i < len(self._row_brightness) else 128
+            palette = self._palette(brightness)
             toggle_rect = QRect(14, y + (row_h - 16) // 2, 16, 16)
             self._toggle_rects.append(toggle_rect)
 
             is_overdue = _is_overdue(task)
 
-            painter.setPen(QPen(QColor("#cfd6df"), 1.5))
+            painter.setPen(QPen(QColor(palette["meta_text"]), 1.5))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawEllipse(toggle_rect)
 
@@ -203,17 +245,17 @@ class StickyOverlay(QWidget):
             font = _ui_font(self._font_size, QFont.Weight.Medium)
             painter.setFont(font)
             if time_str:
-                time_color = self._overdue_color if is_overdue else "#7a7a7a"
+                time_color = self._overdue_color if is_overdue else palette["muted_text"]
                 painter.setPen(QColor(time_color))
                 painter.drawText(text_x, y, 50, row_h, Qt.AlignmentFlag.AlignVCenter, time_str)
                 text_x += 56
 
             pill_rect = QRect(text_x, y + (row_h - 20) // 2, 42, 20)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#173c31"))
+            painter.setPen(QPen(QColor(palette["category_border"]), 1))
+            painter.setBrush(_palette_color(palette["category_fill"]))
             painter.drawRoundedRect(pill_rect, 8, 8)
-            painter.setPen(QColor("#72e5ad"))
-            painter.setFont(_ui_font(10, QFont.Weight.DemiBold))
+            painter.setPen(QColor(palette["category_text"]))
+            painter.setFont(_ui_font(10, QFont.Weight.Bold))
             painter.drawText(pill_rect, Qt.AlignmentFlag.AlignCenter, category[:2])
             text_x += 48
             painter.setFont(font)
@@ -222,7 +264,7 @@ class StickyOverlay(QWidget):
             if is_overdue:
                 text_clr = QColor(self._overdue_color)
             else:
-                text_clr = TASK_TEXT
+                text_clr = QColor(palette["task_text"])
             painter.setPen(text_clr)
             start_space = 54 if self._hovered else 0
             text_rect = QRect(text_x, y, w - text_x - 18 - start_space, row_h)
@@ -241,7 +283,8 @@ class StickyOverlay(QWidget):
 
             # 分隔线
             if i < len(self._tasks) - 1:
-                painter.setPen(QPen(QColor(255, 255, 255, 22), 0.5))
+                div_r, div_g, div_b, div_alpha = palette["divider"]
+                painter.setPen(QPen(QColor(div_r, div_g, div_b, div_alpha), 0.5))
                 painter.drawLine(text_x, y + row_h - 1, w - 12, y + row_h - 1)
 
         if not self._tasks:
@@ -250,13 +293,13 @@ class StickyOverlay(QWidget):
             painter.setFont(font)
             painter.drawText(0, title_h, w, row_h, Qt.AlignmentFlag.AlignCenter, "所有事项已完成")
 
-    def _paint_active_mode(self, painter: QPainter, title_h: int):
+    def _paint_active_mode(self, painter: QPainter, title_h: int, palette: dict):
         w = self.width()
         task = self._active_task
         painter.setPen(QColor("#72e5ad"))
         painter.setFont(_ui_font(11, QFont.Weight.DemiBold))
         painter.drawText(18, title_h + 8, w - 36, 18, Qt.AlignmentFlag.AlignVCenter, "现在做")
-        painter.setPen(TASK_TEXT)
+        painter.setPen(QColor(palette["task_text"]))
         painter.setFont(_ui_font(self._font_size + 3, QFont.Weight.Bold))
         content = task["content"] if task else "还没有开始的事项"
         painter.drawText(
@@ -268,7 +311,7 @@ class StickyOverlay(QWidget):
         self._start_rects = []
         self._complete_rect = QRect()
         painter.setFont(_ui_font(11, QFont.Weight.Medium))
-        painter.setPen(META_TEXT)
+        painter.setPen(QColor(palette["meta_text"]))
         if not task:
             painter.drawText(18, title_h + 72, w - 36, 18, Qt.AlignmentFlag.AlignVCenter, "回到列表选择一项开始。")
             return
@@ -353,6 +396,7 @@ class StickyOverlay(QWidget):
             return
         if self._drag_pos is not None:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
+            self._refresh_colors()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if self._resize_anchor is not None:
@@ -362,8 +406,10 @@ class StickyOverlay(QWidget):
         self.update()
 
     def close_overlay(self):
+        self._refresh_timer.stop()
         self.hide()
         self.closed.emit()
 
     def closeEvent(self, event):
+        self._refresh_timer.stop()
         super().closeEvent(event)

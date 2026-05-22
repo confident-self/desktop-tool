@@ -3,6 +3,7 @@ from PySide6.QtCore import QSettings
 SETTINGS = QSettings("KeenPie", "KeenPie")
 INPUT_TIME_MODES = {"none", "period", "precise"}
 STICKY_VIEW_MODES = {"list", "active"}
+STICKY_READABILITY_MODES = {"soft_panel", "adaptive"}
 STICKY_MIN_WIDTH = 280
 STICKY_DEFAULT_WIDTH = 360
 STICKY_MAX_WIDTH = 680
@@ -89,6 +90,16 @@ def get_sticky_view_mode() -> str:
 def set_sticky_view_mode(mode: str):
     if mode in STICKY_VIEW_MODES:
         SETTINGS.setValue("sticky/view_mode", mode)
+
+
+def get_sticky_readability_mode() -> str:
+    mode = SETTINGS.value("sticky/readability_mode", "soft_panel")
+    return mode if mode in STICKY_READABILITY_MODES else "soft_panel"
+
+
+def set_sticky_readability_mode(mode: str):
+    if mode in STICKY_READABILITY_MODES:
+        SETTINGS.setValue("sticky/readability_mode", mode)
 
 
 def get_active_task_id() -> int | None:

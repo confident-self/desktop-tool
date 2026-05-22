@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QSpinBox, QSlider, QFrame, QFileDialog, QColorDialog, QMessageBox, QScrollArea
+    QSpinBox, QSlider, QFrame, QFileDialog, QColorDialog, QMessageBox, QScrollArea,
+    QComboBox
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -14,6 +15,7 @@ from app.config import (
     get_autostart, set_autostart,
     get_transparency, set_transparency,
     get_theme, set_theme,
+    get_sticky_readability_mode, set_sticky_readability_mode,
 )
 from app.db import export_all_data, clear_all_data
 
@@ -112,6 +114,17 @@ class SettingsPage(QWidget):
         transp_layout.addStretch()
         layout.addLayout(transp_layout)
 
+        readability_layout = QHBoxLayout()
+        readability_layout.addWidget(QLabel("便签可读性模式"))
+        self._readability_combo = QComboBox()
+        self._readability_combo.addItem("柔和底板", "soft_panel")
+        self._readability_combo.addItem("智能适配", "adaptive")
+        self._readability_combo.setCurrentIndex(self._readability_index())
+        self._readability_combo.currentIndexChanged.connect(self._on_readability_mode_changed)
+        readability_layout.addWidget(self._readability_combo)
+        readability_layout.addStretch()
+        layout.addLayout(readability_layout)
+
         # 开机自启
         auto_layout = QHBoxLayout()
         auto_layout.addWidget(QLabel("开机自启"))
@@ -154,6 +167,9 @@ class SettingsPage(QWidget):
         self._transp_slider.setValue(get_transparency())
         self._transp_slider.blockSignals(False)
         self._transp_label.setText(f"{get_transparency()}%")
+        self._readability_combo.blockSignals(True)
+        self._readability_combo.setCurrentIndex(self._readability_index())
+        self._readability_combo.blockSignals(False)
 
     def _setting_row(self, label: str, widget: QWidget) -> QHBoxLayout:
         row = QHBoxLayout()
@@ -179,6 +195,13 @@ class SettingsPage(QWidget):
     def _on_transparency_changed(self, value: int):
         set_transparency(value)
         self._transp_label.setText(f"{value}%")
+        self.settings_changed.emit()
+
+    def _readability_index(self) -> int:
+        return max(0, self._readability_combo.findData(get_sticky_readability_mode()))
+
+    def _on_readability_mode_changed(self, index: int):
+        set_sticky_readability_mode(self._readability_combo.itemData(index))
         self.settings_changed.emit()
 
     def _pick_color(self):
