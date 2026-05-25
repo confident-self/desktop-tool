@@ -86,6 +86,16 @@ def sticky_palette(mode: str, transparency: int, hovered: bool, brightness: int 
     }
 
 
+def format_focus_seconds(seconds: int) -> str:
+    total_minutes = max(0, int(seconds)) // 60
+    hours, minutes = divmod(total_minutes, 60)
+    if hours and minutes:
+        return f"{hours}小时{minutes}分钟"
+    if hours:
+        return f"{hours}小时"
+    return f"{minutes}分钟"
+
+
 def start_message(task: dict) -> str:
     return f"先把「{task['content']}」推进一点。"
 

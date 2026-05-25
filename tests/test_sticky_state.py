@@ -1,11 +1,16 @@
 import unittest
+from datetime import datetime
 from unittest.mock import patch
 
+from PySide6.QtCore import QSettings
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication
 
+from app import config
 from app.sticky_overlay import StickyOverlay
 from app.sticky_state import (
     complete_message,
+    format_focus_seconds,
     get_active_task,
     get_next_task,
     non_hover_panel_alpha,
@@ -23,6 +28,16 @@ TASKS = [
 
 
 class StickyStateTest(unittest.TestCase):
+    def setUp(self):
+        self._settings = QSettings("KeenPieTests", "StickyState")
+        self._settings.clear()
+        self._old_settings = config.SETTINGS
+        config.SETTINGS = self._settings
+
+    def tearDown(self):
+        self._settings.clear()
+        config.SETTINGS = self._old_settings
+
     def test_active_task_is_found_only_when_pending(self):
         self.assertEqual(get_active_task(TASKS, 2)["content"], "听英语")
         self.assertIsNone(get_active_task(TASKS, 3))
@@ -44,6 +59,12 @@ class StickyStateTest(unittest.TestCase):
 
     def test_completion_message_is_encouraging(self):
         self.assertIn("推进", complete_message("写周报"))
+
+    def test_focus_seconds_are_formatted_for_active_overlay(self):
+        self.assertEqual(format_focus_seconds(0), "0分钟")
+        self.assertEqual(format_focus_seconds(65), "1分钟")
+        self.assertEqual(format_focus_seconds(3600), "1小时")
+        self.assertEqual(format_focus_seconds(3900), "1小时5分钟")
 
     def test_missing_active_task_returns_list_mode(self):
         missing = get_active_task(TASKS, 77)
@@ -94,6 +115,28 @@ class StickyStateTest(unittest.TestCase):
         overlay.close()
         app.processEvents()
 
+    def test_non_hovered_overlay_keeps_action_hotspots_hidden(self):
+        app = QApplication.instance() or QApplication([])
+        overlay = StickyOverlay()
+        task = {
+            "id": 1,
+            "content": "写周报",
+            "category": "工作",
+            "time_label": "09:00",
+            "time_value": "09:00",
+            "status": "pending",
+        }
+        with patch("app.sticky_overlay.get_pending_tasks", return_value=[task]):
+            overlay.load_tasks("2026-05-25")
+        overlay._hovered = False
+        canvas = QPixmap(overlay.size())
+        overlay.render(canvas)
+
+        self.assertEqual(overlay._start_rects, [])
+        self.assertTrue(overlay._mode_rect.isNull())
+        overlay.close()
+        app.processEvents()
+
     def test_adaptive_overlay_refreshes_sampled_row_brightness_when_tasks_load(self):
         app = QApplication.instance() or QApplication([])
         overlay = StickyOverlay()
@@ -111,5 +154,27 @@ class StickyStateTest(unittest.TestCase):
                     overlay.load_tasks("2026-05-22")
         sample.assert_called_once()
         self.assertEqual(overlay._row_brightness, [220])
+        overlay.close()
+        app.processEvents()
+
+    def test_finishing_active_session_records_elapsed_seconds(self):
+        app = QApplication.instance() or QApplication([])
+        overlay = StickyOverlay()
+        overlay._target_date = "2026-05-25"
+        with patch("app.sticky_overlay.get_active_task_id", return_value=7):
+            with patch("app.sticky_overlay.get_active_started_at", return_value="2026-05-25T09:00:00"):
+                with patch("app.sticky_overlay.datetime") as dt:
+                    dt.fromisoformat.side_effect = datetime.fromisoformat
+                    dt.now.return_value = datetime.fromisoformat("2026-05-25T09:25:00")
+                    with patch("app.sticky_overlay.add_focus_session") as add:
+                        overlay._finish_active_session()
+
+        add.assert_called_once_with(
+            7,
+            "2026-05-25",
+            "2026-05-25T09:00:00",
+            "2026-05-25T09:25:00",
+            1500,
+        )
         overlay.close()
         app.processEvents()

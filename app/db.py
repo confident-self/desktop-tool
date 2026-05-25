@@ -46,6 +46,17 @@ def init_db():
             is_default INTEGER NOT NULL DEFAULT 0
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS task_focus_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            task_date TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            ended_at TEXT NOT NULL,
+            duration_seconds INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(task_id) REFERENCES task_items(id) ON DELETE CASCADE
+        )
+    """)
     for i, name in enumerate(DEFAULT_CATEGORIES):
         conn.execute("""
             INSERT OR IGNORE INTO task_categories (name, sort_order, is_default)
@@ -53,6 +64,7 @@ def init_db():
         """, (name, i))
     conn.execute("CREATE INDEX IF NOT EXISTS idx_date_order ON task_items(date, sort_order)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_date_status ON task_items(date, status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_focus_task_date ON task_focus_sessions(task_id, task_date)")
     conn.commit()
     conn.close()
 
@@ -144,6 +156,34 @@ def update_task_status(task_id: int, status: str):
     conn.execute("UPDATE task_items SET status=? WHERE id=?", (status, task_id))
     conn.commit()
     conn.close()
+
+
+def add_focus_session(task_id: int, task_date: str, started_at: str, ended_at: str, duration_seconds: int):
+    duration = max(0, int(duration_seconds))
+    if duration <= 0:
+        return
+    conn = get_conn()
+    try:
+        conn.execute("""
+            INSERT INTO task_focus_sessions (task_id, task_date, started_at, ended_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?)
+        """, (int(task_id), task_date, started_at, ended_at, duration))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def get_task_focus_seconds(task_id: int, task_date: str) -> int:
+    conn = get_conn()
+    row = conn.execute("""
+        SELECT COALESCE(SUM(duration_seconds), 0) AS total
+        FROM task_focus_sessions
+        WHERE task_id=? AND task_date=?
+    """, (int(task_id), task_date)).fetchone()
+    conn.close()
+    return int(row["total"] or 0)
 
 
 def update_task_note(task_id: int, note: str):

@@ -41,5 +41,27 @@ class CategoryDatabaseTest(unittest.TestCase):
         self.assertEqual(task["category"], "工作")
 
 
+    def test_focus_sessions_are_summed_by_task_and_date(self):
+        task_id = db.upsert_task({
+            "date": "2026-05-25",
+            "sort_order": 0,
+            "content": "写周报",
+            "category": "工作",
+            "time_label": None,
+            "time_value": None,
+            "status": "pending",
+        })
+
+        db.add_focus_session(task_id, "2026-05-25", "2026-05-25T09:00:00", "2026-05-25T09:25:00", 1500)
+        db.add_focus_session(task_id, "2026-05-25", "2026-05-25T10:00:00", "2026-05-25T10:05:00", 300)
+        db.add_focus_session(task_id, "2026-05-24", "2026-05-24T10:00:00", "2026-05-24T10:05:00", 300)
+
+        self.assertEqual(db.get_task_focus_seconds(task_id, "2026-05-25"), 1800)
+
+    def test_focus_session_for_missing_task_is_ignored(self):
+        db.add_focus_session(999, "2026-05-25", "2026-05-25T09:00:00", "2026-05-25T09:10:00", 600)
+        self.assertEqual(db.get_task_focus_seconds(999, "2026-05-25"), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
